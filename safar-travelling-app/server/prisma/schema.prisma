@@ -1,0 +1,6 @@
+model Package {
+  id        Int     @id @default(autoincrement())
+  place     String
+  days      String
+  price     String
+}

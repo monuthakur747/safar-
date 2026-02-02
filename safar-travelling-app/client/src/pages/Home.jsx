@@ -1,25 +1,53 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plane, MapPin, Calendar } from "lucide-react";
+import { Plane, MapPin, Calendar, LogOut } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
-export default function Home() {
-  const [packages, setPackages] = useState([]);
+export default function Home({ packages: initialPackages }) {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [packages, setPackages] = useState(initialPackages || []);
   const [destination, setDestination] = useState("");
 
   useEffect(() => {
     const fetchPackages = async () => {
-      const response = await fetch("/api/packages");
-      const data = await response.json();
-      setPackages(data);
+      try {
+        const response = await fetch("/api/packages");
+        const data = await response.json();
+        setPackages(data);
+      } catch (error) {
+        console.error("Error fetching packages:", error);
+      }
     };
 
-    fetchPackages();
-  }, []);
+    if (!initialPackages || initialPackages.length === 0) {
+      fetchPackages();
+    }
+  }, [initialPackages]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-center mb-6">Safar Travelling 🇮🇳</h1>
+      {/* Header with Logout */}
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Safar Travelling 🇮🇳</h1>
+        <div className="flex items-center gap-4">
+          {user && <span className="text-gray-600 text-sm">{user.email}</span>}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
+          >
+            <LogOut size={18} />
+            Logout
+          </button>
+        </div>
+      </div>
       <p className="text-center text-gray-600 mb-8">
         Explore beautiful destinations across India with us
       </p>

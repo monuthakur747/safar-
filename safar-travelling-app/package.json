@@ -10,8 +10,10 @@
   "dependencies": {
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0",
     "lucide-react": "^0.0.0",
-    "axios": "^0.21.1"
+    "axios": "^0.21.1",
+    "@supabase/supabase-js": "^2.38.0"
   },
   "devDependencies": {
     "vite": "^2.0.0",

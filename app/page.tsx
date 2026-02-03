@@ -1,118 +1,75 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
-import { LogOut } from 'lucide-react';
-
 export default function HomePage() {
-  const router = useRouter();
-  const { user, loading, signOut } = useAuth();
-  const [packages, setPackages] = useState([]);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    const fetchPackages = async () => {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/packages`
-        );
-        const data = await response.json();
-        setPackages(data);
-      } catch (error) {
-        console.error('Error fetching packages:', error);
-      }
-    };
-
-    fetchPackages();
-  }, []);
-
-  const handleLogout = async () => {
-    await signOut();
-    router.push('/login');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      {/* Header with Logout */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2">
-          <span className="text-4xl">✈️</span>
-          <h1 className="text-3xl font-bold">Safar Travelling</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-3xl">✈️</span>
+            <h1 className="text-2xl font-bold text-orange-600">Safar</h1>
+          </div>
+          <nav className="flex gap-4">
+            <a href="/login" className="text-gray-600 hover:text-orange-600 font-semibold">
+              Login
+            </a>
+            <a href="/signup" className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+              Sign Up
+            </a>
+          </nav>
         </div>
-        <div className="flex items-center gap-4">
-          {user && <span className="text-gray-600 text-sm">{user.email}</span>}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
-        </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Welcome, {user.name || user.email}!
+      {/* Hero Section */}
+      <main className="max-w-6xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-gray-800 mb-4">
+            Discover Amazing Travel Destinations
           </h2>
-          <p className="text-gray-600">
-            Explore amazing travel destinations and book your next adventure with Safar.
+          <p className="text-xl text-gray-600 mb-8">
+            Explore beautiful travel packages across India and book your next adventure with Safar
           </p>
+          <a
+            href="/signup"
+            className="inline-block bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg font-semibold transition text-lg"
+          >
+            Get Started
+          </a>
         </div>
 
-        {/* Packages Section */}
+        {/* Featured Packages */}
         <div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">Travel Packages</h3>
-          {packages.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {packages.map((pkg: any) => (
-                <div key={pkg._id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-                  <div className="h-48 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-                    <span className="text-6xl">🏔️</span>
-                  </div>
-                  <div className="p-4">
-                    <h4 className="text-xl font-bold text-gray-800 mb-2">{pkg.name}</h4>
-                    <p className="text-gray-600 text-sm mb-4">{pkg.description}</p>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-lg font-bold text-orange-600">₹{pkg.price}</span>
-                      <span className="text-sm text-gray-500">{pkg.duration} days</span>
-                    </div>
-                    <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg transition">
-                      Book Now
+          <h3 className="text-3xl font-bold mb-8 text-center">Popular Destinations</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { name: "Goa Beach Paradise", description: "Experience the sandy beaches and vibrant nightlife of Goa", price: "₹15,999" },
+              { name: "Himalayan Trek", description: "Adventure through the majestic Himalayan mountains", price: "₹21,999" },
+              { name: "Kerala Backwaters", description: "Peaceful boat rides through the scenic backwaters of Kerala", price: "₹12,999" },
+              { name: "Rajasthan Heritage", description: "Explore the magnificent palaces and forts of Rajasthan", price: "₹17,999" },
+              { name: "Northeast Explorer", description: "Discover the hidden gems of India's Northeast region", price: "₹19,999" },
+              { name: "Andaman Islands", description: "Pristine beaches and crystal clear waters await you", price: "₹24,999" }
+            ].map((pkg, idx) => (
+              <div
+                key={idx}
+                className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden"
+              >
+                <div className="bg-gradient-to-r from-orange-400 to-orange-600 h-32"></div>
+                <div className="p-6">
+                  <h4 className="text-xl font-semibold mb-2 text-gray-800">{pkg.name}</h4>
+                  <p className="text-gray-600 mb-4">{pkg.description}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-2xl font-bold text-orange-600">{pkg.price}</span>
+                    <button className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition">
+                      Learn More
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <p className="text-gray-600">No packages available at the moment.</p>
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

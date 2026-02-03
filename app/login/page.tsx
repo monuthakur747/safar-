@@ -1,14 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { requestLoginOTP, verifyLoginOTP } = useAuth();
-
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,10 +22,15 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error: otpError } = await requestLoginOTP(email);
+      const response = await fetch('/api/auth/login-request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-      if (otpError) {
-        setError(otpError.message);
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Failed to request OTP');
       } else {
         setOtpSent(true);
       }
@@ -53,12 +53,18 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error: verifyError } = await verifyLoginOTP(email, otp);
+      const response = await fetch('/api/auth/verify-otp-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
 
-      if (verifyError) {
-        setError(verifyError.message);
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Failed to verify OTP');
       } else {
-        router.push('/');
+        localStorage.setItem('auth_token', data.token);
+        window.location.href = '/';
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to verify OTP');

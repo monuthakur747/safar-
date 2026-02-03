@@ -1,106 +1,141 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext(null);
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [session, setSession] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Initialize from localStorage
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const savedToken = localStorage.getItem("auth_token");
+    const savedUser = localStorage.getItem("auth_user");
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription?.unsubscribe();
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
   }, []);
 
-  const signUp = async (email, password) => {
+  // Save to localStorage when token or user changes
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("auth_token", token);
+      if (user) {
+        localStorage.setItem("auth_user", JSON.stringify(user));
+      }
+    }
+  }, [token, user]);
+
+  // Request OTP for signup
+  const requestSignupOTP = async (email) => {
     try {
       setError(null);
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const response = await fetch(`${API_BASE_URL}/auth/signup-request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
 
-      if (signUpError) throw signUpError;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
       return { data, error: null };
     } catch (err) {
-      setError(err.message);
+      const errorMsg = err.message || "Failed to request OTP";
+      setError(errorMsg);
       return { data: null, error: err };
     }
   };
 
-  const signIn = async (email, password) => {
+  // Verify OTP and complete signup
+  const verifySignupOTP = async (email, otp, password, confirmPassword) => {
     try {
       setError(null);
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch(`${API_BASE_URL}/auth/verify-otp-signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, password, confirmPassword }),
       });
 
-      if (signInError) throw signInError;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+
+      // Store token and user
+      setToken(data.token);
+      setUser(data.user);
       return { data, error: null };
     } catch (err) {
-      setError(err.message);
+      const errorMsg = err.message || "Failed to verify OTP";
+      setError(errorMsg);
+      return { data: null, error: err };
+    }
+  };
+
+  // Request OTP for login
+  const requestLoginOTP = async (email) => {
+    try {
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/auth/login-request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      return { data, error: null };
+    } catch (err) {
+      const errorMsg = err.message || "Failed to request OTP";
+      setError(errorMsg);
+      return { data: null, error: err };
+    }
+  };
+
+  // Verify OTP for login
+  const verifyLoginOTP = async (email, otp) => {
+    try {
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/auth/verify-otp-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+
+      // Store token and user
+      setToken(data.token);
+      setUser(data.user);
+      return { data, error: null };
+    } catch (err) {
+      const errorMsg = err.message || "Failed to verify OTP";
+      setError(errorMsg);
       return { data: null, error: err };
     }
   };
 
   const signOut = async () => {
-    try {
-      setError(null);
-      const { error: signOutError } = await supabase.auth.signOut();
-      if (signOutError) throw signOutError;
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const resendConfirmationEmail = async (email) => {
-    try {
-      setError(null);
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (resendError) throw resendError;
-      return { error: null };
-    } catch (err) {
-      setError(err.message);
-      return { error: err };
-    }
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_user");
   };
 
   const value = {
     user,
-    session,
+    token,
     loading,
     error,
-    signUp,
-    signIn,
+    requestSignupOTP,
+    verifySignupOTP,
+    requestLoginOTP,
+    verifyLoginOTP,
     signOut,
-    resendConfirmationEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,216 +1,226 @@
-# Email Verification Authentication Setup
+# OTP-Based Email Authentication Setup
 
-This guide explains how to set up and configure the email verification authentication system for the Safar travelling app using Supabase.
+This guide explains how to set up and configure the OTP-based email authentication system for the Safar travelling app using Nodemailer.
 
 ## Overview
 
 The authentication system includes:
-- User sign-up with email verification
-- Email verification via confirmation links
-- Secure login with email confirmation check
-- Account protection with verified email requirement
-- Ability to resend confirmation emails
+- User sign-up with OTP verification via email
+- User login with OTP verification via email
+- 6-digit OTP with 10-minute expiration
+- Max 5 attempt limit before OTP expiration
+- Secure JWT-based session management
+- MongoDB for user and OTP storage
 
 ## Prerequisites
 
-- A Supabase account (https://supabase.com)
-- Node.js and npm installed
+- Node.js (v14+) and npm installed
+- MongoDB (local or cloud instance like MongoDB Atlas)
+- Gmail account (or other email service) for sending OTPs
 - The Safar travelling app cloned and ready to run
 
-## Step 1: Create a Supabase Project
+## Step 1: Set Up MongoDB
 
-1. Go to [supabase.com](https://supabase.com) and sign in or create an account
-2. Click "New Project" to create a new project
-3. Enter a project name (e.g., "safar-travelling")
-4. Choose a database password (save this securely)
-5. Select your preferred region
-6. Click "Create new project" and wait for it to initialize
+### Option A: Local MongoDB
 
-## Step 2: Configure Authentication
+1. Download and install MongoDB from https://www.mongodb.com/try/download/community
+2. Start MongoDB service:
+   ```bash
+   mongod
+   ```
+3. Default connection string: `mongodb://localhost:27017/safar`
 
-1. In your Supabase project dashboard, go to **Authentication** > **Providers**
-2. Ensure **Email** provider is enabled
-3. Go to **Authentication** > **Email Templates**
-4. Update the Confirmation Link email template to use your app's callback URL:
-   - Replace the confirmation link URL with: `{{ .ConfirmationURL }}`
-   - Make sure it points to `https://yourdomain.com/auth/callback`
+### Option B: MongoDB Atlas (Cloud)
 
-## Step 3: Get API Keys
+1. Go to https://www.mongodb.com/cloud/atlas
+2. Create a free cluster
+3. Create a user and whitelist your IP
+4. Get your connection string from the cluster overview
+5. Format: `mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/safar`
 
-1. Go to **Settings** > **API**
-2. Copy the following values:
-   - **Project URL** - This is your `VITE_SUPABASE_URL`
-   - **anon public** key - This is your `VITE_SUPABASE_ANON_KEY`
+## Step 2: Configure Email Service (Gmail)
+
+### Using Gmail
+
+1. Go to your Google Account: https://myaccount.google.com/
+2. Click "Security" in the left menu
+3. Enable "2-Step Verification" if not already enabled
+4. Go to "App passwords" and select:
+   - App: Mail
+   - Device: Windows Computer (or your device)
+5. Copy the generated app password (16 characters)
+6. Use this password in your `.env` file as `MAIL_PASSWORD`
+
+### Using Other Email Services
+
+Update `MAIL_SERVICE` in your `.env` file. Supported services:
+- `gmail`
+- `outlook`
+- `yahoo`
+- `aol`
+- Or configure a custom SMTP server
+
+## Step 3: Install Dependencies
+
+### Backend
+
+```bash
+cd server
+npm install
+```
+
+### Frontend
+
+```bash
+cd ../client
+npm install
+```
 
 ## Step 4: Configure Environment Variables
-
-### Frontend (.env.local in client directory)
-
-Create a `.env.local` file in the `/client` directory:
-
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
-```
 
 ### Backend (.env in server directory)
 
 Create a `.env` file in the `/server` directory:
 
-```env
-MONGODB_URI=your_mongodb_uri_here
+```
 PORT=5000
+MONGODB_URI=mongodb://localhost:27017/safar
+JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+MAIL_SERVICE=gmail
+MAIL_USER=your_email@gmail.com
+MAIL_PASSWORD=your_app_password_here
 ```
 
-## Step 5: Install Dependencies
+### Frontend (.env.local in client directory)
 
-From the root directory, install all dependencies:
+Create a `.env.local` file in the `/client` directory:
 
-```bash
-# Install root dependencies
-npm install
-
-# Install client dependencies
-cd client
-npm install
-cd ..
-
-# Install server dependencies
-cd server
-npm install
-cd ..
+```
+VITE_API_URL=http://localhost:5000/api
 ```
 
-## Step 6: Configure Callback URL
+## Step 5: Run the Application
 
-1. In Supabase, go to **Authentication** > **URL Configuration**
-2. Add your app's callback URL under "Redirect URLs":
-   - For local development: `http://localhost:5173/auth/callback`
-   - For production: `https://yourdomain.com/auth/callback`
-
-## Step 7: Test Email Sending (Optional)
-
-By default, Supabase uses a test email service in development. To receive real emails:
-
-1. Go to **Settings** > **Email**
-2. Either:
-   - Use Supabase's built-in email (comes with limited free quota)
-   - Or configure your own SMTP provider
-
-For development, you can use Supabase's test mode which logs emails to the console.
-
-## Running the Application
-
-### Development
+### Terminal 1: Start Backend Server
 
 ```bash
-# Terminal 1: Start the frontend (from client directory)
-cd client
-npm run dev
-
-# Terminal 2: Start the backend (from server directory)
 cd server
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`
+The server will run on `http://localhost:5000`
 
-### Production
+### Terminal 2: Start Frontend Development Server
 
-Build and deploy using your preferred hosting platform (Vercel, Netlify, etc.)
-
-## User Flow
-
-### Sign Up
-1. User clicks "Sign Up" on the login page
-2. Enters email and password
-3. Receives confirmation email with verification link
-4. Clicks link in email
-5. Email is marked as confirmed in Supabase
-6. User can now log in
-
-### Login
-1. User enters email and password
-2. System checks if email is confirmed
-3. If not confirmed, shows "Email not confirmed" error
-4. User can click "Resend" to get another confirmation link
-5. Once confirmed, login succeeds
-
-### Resend Confirmation
-1. User clicks "Resend Confirmation" link
-2. Enters their email
-3. Receives another confirmation email
-4. Follows the verification process again
-
-## File Structure
-
+```bash
+cd client
+npm run dev
 ```
-client/src/
-├── contexts/
-│   └── AuthContext.jsx          # Auth state management
-├── lib/
-│   └── supabase.js              # Supabase client config
-├── pages/
-│   ├── Login.jsx                # Login page with email verification check
-│   ├── SignUp.jsx               # Sign up page
-│   ├── AuthCallback.jsx         # Email verification callback handler
-│   ├── ResendConfirmation.jsx   # Resend confirmation page
-│   └── Home.jsx                 # Protected home page
-└── App.jsx                      # Routes and auth provider setup
-```
+
+The frontend will run on `http://localhost:5173` (or another port if 5173 is busy)
+
+## Testing the Authentication Flow
+
+### Sign Up Flow
+
+1. Click "Sign up" on the login page
+2. Enter email, password, and confirm password
+3. Click "Get OTP"
+4. Check your email for the 6-digit OTP
+5. Enter the OTP and click "Verify OTP"
+6. You should be logged in and redirected to the home page
+
+### Login Flow
+
+1. Click "Login" (if logged out)
+2. Enter your email
+3. Click "Request OTP"
+4. Check your email for the 6-digit OTP
+5. Enter the OTP and click "Login"
+6. You should be logged in
+
+## API Endpoints
+
+### Authentication Routes
+
+**POST** `/api/auth/signup-request-otp`
+- Request OTP for signup
+- Body: `{ email: "user@example.com" }`
+
+**POST** `/api/auth/verify-otp-signup`
+- Verify OTP and create account
+- Body: `{ email, otp, password, confirmPassword }`
+
+**POST** `/api/auth/login-request-otp`
+- Request OTP for login
+- Body: `{ email: "user@example.com" }`
+
+**POST** `/api/auth/verify-otp-login`
+- Verify OTP and login
+- Body: `{ email, otp }`
+
+**GET** `/api/auth/me`
+- Get current user (requires Bearer token)
+- Header: `Authorization: Bearer <token>`
 
 ## Troubleshooting
 
-### "Email not confirmed" Error
+### OTP not being sent
 
-This means the user hasn't clicked the confirmation link yet. Solutions:
-- Check spam/junk folder for confirmation email
-- Click the "Resend Confirmation" link to get a new email
-- Check Supabase email templates are configured correctly
+1. Check email credentials in `.env`:
+   - Ensure `MAIL_USER` is correct
+   - Ensure `MAIL_PASSWORD` is the app-specific password (not your regular Gmail password)
+   - For Gmail, enable "Less secure app access" if using regular password
 
-### Not Receiving Confirmation Emails
+2. Check MongoDB connection:
+   - Ensure MongoDB is running
+   - Check `MONGODB_URI` in `.env`
 
-1. Check Supabase email logs in **Auth** > **User Management**
-2. Verify callback URL is correct in **Settings** > **URL Configuration**
-3. Check email template configuration in **Authentication** > **Email Templates**
-4. For development, check browser console for test email logs
+3. Check server logs for errors
 
-### Environment Variables Not Working
+### OTP expired
 
-- Make sure `.env.local` is in the correct directory (`/client` for frontend)
-- Restart the development server after adding env variables
-- Environment variables must start with `VITE_` to be accessible in frontend
+- OTP automatically expires after 10 minutes
+- Request a new OTP by clicking "Back" and requesting again
 
-### Redirect Loop
+### Max attempts reached
 
-If you're stuck in a redirect loop:
-1. Clear browser cookies for the domain
-2. Hard refresh the page (Ctrl+Shift+R or Cmd+Shift+R)
-3. Check that your Supabase redirect URLs are correctly configured
+- If you enter wrong OTP 5 times, the OTP is invalidated
+- Request a new OTP
+
+### Can't login after signup
+
+1. Ensure email is verified (check spam folder for OTP email)
+2. Ensure you entered the correct OTP
+3. Check that the backend server is running
 
 ## Security Notes
 
-- Never commit `.env.local` or `.env` files to git
-- The `VITE_SUPABASE_ANON_KEY` is public and safe to expose
-- Supabase handles password hashing and storage securely
-- All auth tokens are HTTP-only cookies when possible
-- Email confirmation is required before account access
+- OTPs are 6-digit random numbers
+- OTPs expire after 10 minutes
+- Max 5 verification attempts per OTP
+- Passwords are hashed using bcryptjs before storage
+- JWTs are signed with JWT_SECRET
+- Always use HTTPS in production
+- Change JWT_SECRET in production to a strong, random value
+- Never commit `.env` files to version control
 
-## Next Steps
+## Production Deployment
 
-After authentication is working:
-1. Connect your existing packages API to the authenticated users
-2. Add user profiles and preferences
-3. Implement booking system with user verification
-4. Add admin dashboard for managing packages
+Before deploying to production:
+
+1. Change `JWT_SECRET` to a strong random string
+2. Use a production MongoDB instance (MongoDB Atlas)
+3. Use a production email service (SendGrid, AWS SES, etc.)
+4. Set `VITE_API_URL` to your production backend URL
+5. Enable HTTPS on your server
+6. Add CORS configuration for your domain
+7. Set proper environment variables in your hosting platform
 
 ## Support
 
-For Supabase-specific issues:
-- Check Supabase documentation: https://supabase.com/docs
-- Visit Supabase community: https://discord.supabase.io
-
-For app-specific issues:
-- Check the browser console for error messages
-- Look at Supabase logs in the dashboard
-- Verify all environment variables are set correctly
+For issues or questions, check:
+- Browser console for frontend errors
+- Server logs for backend errors
+- MongoDB connection status
+- Email service credentials

@@ -4,8 +4,6 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
-import AuthCallback from "./pages/AuthCallback";
-import ResendConfirmation from "./pages/ResendConfirmation";
 
 function ProtectedRoute({ element }) {
   const { user, loading } = useAuth();
@@ -44,8 +42,6 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/resend-confirmation" element={<ResendConfirmation />} />
       <Route path="/" element={<ProtectedRoute element={<Home packages={packages} />} />} />
     </Routes>
   );

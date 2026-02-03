@@ -4,13 +4,18 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { requestSignupOTP, verifySignupOTP } = useAuth();
+  
+  // Step 1: Email input
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [confirmationSent, setConfirmationSent] = useState(false);
+  
+  // Step 2: OTP verification
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const validateForm = () => {
     if (!email || !password || !confirmPassword) {
@@ -28,7 +33,7 @@ export default function SignUp() {
     return true;
   };
 
-  const handleSubmit = async (e) => {
+  const handleRequestOTP = async (e) => {
     e.preventDefault();
     setError(null);
 
@@ -37,42 +42,115 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await signUp(email, password);
+      const { error: otpError } = await requestSignupOTP(email);
 
-      if (signUpError) {
-        setError(signUpError.message);
+      if (otpError) {
+        setError(otpError.message);
       } else {
-        setConfirmationSent(true);
+        setOtpSent(true);
       }
     } catch (err) {
-      setError(err.message || "An error occurred during sign up");
+      setError(err.message || "Failed to request OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  if (confirmationSent) {
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!otp) {
+      setError("Please enter the OTP");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error: verifyError } = await verifySignupOTP(
+        email,
+        otp,
+        password,
+        confirmPassword
+      );
+
+      if (verifyError) {
+        setError(verifyError.message);
+      } else {
+        navigate("/");
+      }
+    } catch (err) {
+      setError(err.message || "Failed to verify OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (otpSent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="mb-4 text-4xl">✓</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Confirm Your Email
-            </h2>
-            <p className="text-gray-600 mb-4">
-              We've sent a confirmation link to <strong>{email}</strong>. Please click the
-              link in your email to verify your account.
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="text-4xl">✈️</span>
+              <h1 className="text-3xl font-bold text-orange-600">Safar</h1>
+            </div>
+          </div>
+
+          {/* OTP Verification Card */}
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Verify Your Email</h2>
+            <p className="text-gray-600 mb-6">
+              We've sent a 6-digit OTP to <strong>{email}</strong>
             </p>
-            <p className="text-sm text-gray-500 mb-6">
-              You can now close this window and check your email.
-            </p>
-            <Link
-              to="/login"
-              className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-lg transition duration-200"
+
+            <form onSubmit={handleVerifyOTP} className="space-y-4">
+              {/* OTP Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Enter OTP
+                </label>
+                <input
+                  type="text"
+                  maxLength="6"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="000000"
+                  required
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  OTP expires in 10 minutes
+                </p>
+              </div>
+
+              {/* Error Message */}
+              {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
+
+              {/* Verify Button */}
+              <button
+                type="submit"
+                disabled={loading || otp.length !== 6}
+                className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+              >
+                {loading ? "Verifying..." : "Verify OTP"}
+              </button>
+            </form>
+
+            {/* Back Link */}
+            <button
+              onClick={() => {
+                setOtpSent(false);
+                setOtp("");
+                setError(null);
+              }}
+              className="w-full text-center text-orange-600 font-semibold hover:text-orange-700 mt-4"
             >
-              Back to Login
-            </Link>
+              Back to Enter Details
+            </button>
           </div>
         </div>
       </div>
@@ -97,7 +175,7 @@ export default function SignUp() {
             Join us to explore amazing travel destinations
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleRequestOTP} className="space-y-4">
             {/* Email Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -155,7 +233,7 @@ export default function SignUp() {
               disabled={loading}
               className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
             >
-              {loading ? "Creating account..." : "Sign Up"}
+              {loading ? "Sending OTP..." : "Get OTP"}
             </button>
           </form>
 
